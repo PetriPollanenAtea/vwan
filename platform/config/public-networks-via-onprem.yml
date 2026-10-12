@@ -1,0 +1,11 @@
+public_networks_via_onprem:
+  london:
+    address_prefixes:
+      - 203.0.113.0/24
+      - 198.51.100.0/24
+  stockholm:
+    address_prefixes:
+      - 192.0.2.0/24
+  chicago:
+    address_prefixes:
+      - 100.64.20.0/24

@@ -1,0 +1,25 @@
+name: network-management
+priority: 500
+action: Allow
+rules:
+  - name: allow-rdp
+    description: RDP
+    protocols:
+      - TCP
+    source_ip_groups:
+      - global/management
+    destination_addresses:
+      - "10.0.0.0/16"
+    destination_ports:
+      - "3389"
+  - name: allow-ssh
+    description: SSH
+    protocols:
+      - TCP
+    source_ip_groups:
+      - global/management
+    destination_addresses:
+      - "10.0.0.0/16"
+    destination_ports:
+      - "22"
+      

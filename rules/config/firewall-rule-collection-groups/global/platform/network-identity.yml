@@ -1,0 +1,25 @@
+name: network-identity
+priority: 200
+action: Allow
+rules:
+  - name: allow-active-directory
+    description: Active Directory authentication services
+    protocols:
+      - TCP
+      - UDP
+    source_ip_groups:
+      - emea/branch-sites
+      - americas/branch-sites
+    destination_ip_groups:
+      - global/domain-controllers
+    destination_ports:
+      - "53"
+      - "88"
+      - "123"
+      - "135"
+      - "389"
+      - "445"
+      - "464"
+      - "636"
+      - "3268"
+      - "3269"

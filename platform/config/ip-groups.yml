@@ -1,0 +1,32 @@
+ip_groups:
+  global/shared-services:
+    name: ipg-global-shared-services
+    resource_group_name: rg-petrip
+    location: swedencentral
+    cidrs:
+      - 10.10.0.0/16
+      - 10.11.0.0/16
+
+  global/domain-controllers:
+    name: ipg-global-domain-controllers
+    resource_group_name: rg-petrip
+    location: swedencentral
+    cidrs:
+      - 10.100.10.10
+      - 10.100.10.11
+
+  emea/branch-sites:
+    name: ipg-emea-branch-sites
+    resource_group_name: rg-petrip
+    location: swedencentral
+    cidrs:
+      - 10.100.0.0/16
+      - 10.110.0.0/16
+
+  americas/branch-sites:
+    name: ipg-americas-branch-sites
+    resource_group_name: rg-petrip
+    location: swedencentral
+    cidrs:
+      - 10.200.0.0/16
+      - 10.201.0.0/16

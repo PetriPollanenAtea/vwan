@@ -1,0 +1,13 @@
+firewalls:
+  emea:
+    name: azfw-emea
+    virtual_hub: emea
+    firewall_policy: emea
+    sku_tier: Standard
+    public_ip_count: 1
+  americas:
+    name: azfw-americas
+    virtual_hub: americas
+    firewall_policy: americas
+    sku_tier: Standard
+    public_ip_count: 1

@@ -1,0 +1,26 @@
+name: application-m365
+priority: 200
+action: Allow
+rules:
+  - name: allow-microsoft-365
+    source_ip_groups:
+      - emea/branch-sites
+    destination_fqdns:
+      - login.microsoftonline.com
+      - graph.microsoft.com
+      - "*.office.com"
+      - "*.office365.com"
+      - "*.microsoft.com"
+    protocols:
+      - type: Https
+        port: 443
+  - name: allow-azure-management
+    source_ip_groups:
+      - emea/branch-sites
+    destination_fqdns:
+      - management.azure.com
+      - portal.azure.com
+      - "*.azure.com"
+    protocols:
+      - type: Https
+        port: 443

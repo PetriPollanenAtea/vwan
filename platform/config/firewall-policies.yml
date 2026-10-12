@@ -1,0 +1,30 @@
+firewall_policies:
+  global:
+    name: azfw-pol-global
+    resource_group_name: rg-petrip
+    location: swedencentral
+    sku: Standard
+  
+  emea:
+    parent: global
+    name: azfw-pol-emea
+    resource_group_name: rg-petrip
+    location: swedencentral
+    sku: Standard
+    dns:
+      proxy_enabled: true
+      servers:
+        - 10.1.1.10
+        - 10.1.1.11
+  
+  americas:
+    parent: global
+    name: azfw-pol-americas
+    resource_group_name: rg-petrip
+    location: swedencentral
+    sku: Standard
+    dns:
+      proxy_enabled: true
+      servers:
+        - 10.2.1.10
+        - 10.2.1.11

@@ -1,0 +1,14 @@
+name: application-microsoft-services
+priority: 200
+action: Allow
+rules:
+  - name: allow-m365
+    source_ip_groups:
+      - global/shared-services
+    destination_fqdns:
+      - login.microsoftonline.com
+      - graph.microsoft.com
+      - "*.office.com"
+    protocols:
+      - type: Https
+        port: 443

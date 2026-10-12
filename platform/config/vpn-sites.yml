@@ -1,0 +1,53 @@
+vpn_sites:
+  london:
+    hub: emea
+    name: vpn-london
+    address_prefixes:
+      - 10.100.0.0/16
+      - 10.101.0.0/16
+    device_vendor: Cisco
+    device_model: ISR4431
+    links:
+      primary:
+        name: primary
+        ip_address: 192.168.10.1
+        provider_name: ISP1
+        speed_in_mbps: 1000
+      secondary:
+        name: secondary
+        ip_address: 192.168.10.2
+        provider_name: ISP2
+        speed_in_mbps: 500
+
+  stockholm:
+    hub: emea
+    name: vpn-stockholm
+    address_prefixes:
+      - 10.110.0.0/16
+    device_vendor: Fortinet
+    device_model: Fortigate-200F
+    links:
+      primary:
+        name: primary
+        ip_address: 192.168.20.1
+        provider_name: ISP1
+        speed_in_mbps: 1000
+
+  chicago:
+    hub: americas
+    name: vpn-chicago
+    address_prefixes:
+      - 10.200.0.0/16
+      - 10.201.0.0/16
+    device_vendor: Palo Alto
+    links:
+      primary:
+        name: primary
+        ip_address: 192.168.30.1
+        provider_name: ISP1
+        speed_in_mbps: 1000
+      secondary:
+        name: secondary
+        ip_address: 192.168.30.2
+        provider_name: ISP2
+        speed_in_mbps: 1000

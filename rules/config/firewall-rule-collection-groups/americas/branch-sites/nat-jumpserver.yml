@@ -1,0 +1,15 @@
+name: nat-jumpserver
+priority: 100
+action: Dnat
+rules:
+  - name: dnat-rdp-jumpserver
+    description: Publish Americas management jump server
+    protocols:
+      - TCP
+    source_ip_groups:
+      - global/shared-services
+    destination_address: 52.157.213.53
+    destination_ports:
+      - "3389"
+    translated_address: 10.20.1.10
+    translated_port: "3389"

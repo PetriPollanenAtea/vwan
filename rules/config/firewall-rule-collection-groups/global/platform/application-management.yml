@@ -1,0 +1,23 @@
+name: application-management
+priority: 300
+action: Allow
+rules:
+  - name: allow-azure-management
+    source_ip_groups:
+      - global/shared-services
+    destination_fqdns:
+      - management.azure.com
+      - portal.azure.com
+      - "*.azure.com"
+    protocols:
+      - type: Https
+        port: 443
+  - name: allow-microsoft-identity
+    source_ip_groups:
+      - global/shared-services
+    destination_fqdns:
+      - login.microsoftonline.com
+      - graph.microsoft.com
+    protocols:
+      - type: Https
+        port: 443

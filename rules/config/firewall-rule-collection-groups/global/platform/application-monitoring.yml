@@ -1,0 +1,14 @@
+name: application-monitoring
+priority: 400
+action: Allow
+rules:
+  - name: allow-log-analytics
+    source_ip_groups:
+      - global/shared-services
+    destination_fqdns:
+      - "*.ods.opinsights.azure.com"
+      - "*.monitor.azure.com"
+      - "*.applicationinsights.azure.com"
+    protocols:
+      - type: Https
+        port: 443

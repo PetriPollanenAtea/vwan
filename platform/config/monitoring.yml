@@ -1,0 +1,13 @@
+monitoring:
+  log_analytics:
+    name: law-global-network
+    resource_group_name: rg-petrip
+    location: swedencentral
+    retention_in_days: 90
+  diagnostics:
+    virtual_wan: true
+    virtual_hubs: true
+    vpn_gateways: true
+    firewalls: true
+    firewall_policies: true
+    routing_intent: true

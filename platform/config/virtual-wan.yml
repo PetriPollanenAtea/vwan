@@ -1,0 +1,46 @@
+virtual_wan:
+  name: vwan-global-001
+  resource_group_name: rg-petrip
+  location: swedencentral
+  type: Standard
+  allow_branch_to_branch_traffic: false
+  disable_vpn_encryption: false
+  tags:
+    environment: production
+    service: virtual-wan
+    managed_by: terraform
+
+virtual_hubs:
+  emea:
+    name: vhub-emea-001
+    resource_group_name: rg-petrip
+    location: swedencentral
+    address_prefix: 10.189.16.0/22
+    sku: Standard
+    hub_routing_preference: VpnGateway
+    routing_intent:
+      internet:
+        next_hop: firewall
+      private:
+        next_hop: firewall
+    tags:
+      environment: production
+      region: emea
+      managed_by: terraform
+
+  americas:
+      name: vhub-americas-001
+      resource_group_name: rg-petrip
+      location: westeurope
+      address_prefix: 10.188.16.0/22
+      sku: Standard
+      hub_routing_preference: VpnGateway
+      routing_intent:
+        internet:
+          next_hop: firewall
+        private:
+          next_hop: firewall
+      tags:
+        environment: production
+        region: americas
+        managed_by: terraform

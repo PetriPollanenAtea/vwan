@@ -1,0 +1,16 @@
+name: network-dns
+priority: 100
+action: Allow
+rules:
+  - name: allow-dns-from-branches
+    description: DNS resolution to central DNS services
+    protocols:
+      - TCP
+      - UDP
+    source_ip_groups:
+      - emea/branch-sites
+      - americas/branch-sites
+    destination_ip_groups:
+      - global/shared-services
+    destination_ports:
+      - "53"

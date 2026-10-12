@@ -1,0 +1,30 @@
+virtual_hub_connections:
+  emea_application:
+    name: conn-emea-application
+    virtual_hub: emea
+    virtual_network: emea_application
+    internet_security_enabled: true
+    routing:
+      associated_route_table: default
+      propagated_route_tables:
+        - default
+      propagated_labels:
+        - Default
+
+  emea_shared_services:
+    name: conn-emea-shared-services
+    virtual_hub: emea
+    virtual_network: emea_shared_services
+    internet_security_enabled: false
+
+  americas_application:
+    name: conn-americas-application
+    virtual_hub: americas
+    virtual_network: americas_application
+    internet_security_enabled: false
+
+  americas_legacy:
+    name: conn-americas-legacy
+    virtual_hub: americas
+    virtual_network: americas_legacy
+    internet_security_enabled: false
