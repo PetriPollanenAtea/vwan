@@ -4,10 +4,16 @@ firewalls:
     virtual_hub: emea
     firewall_policy: emea
     sku_tier: Standard
-    public_ip_count: 1
+    public_ip_prefix:
+      name: ippre-azfw-emea
+      prefix_length: 29
+      firewall_ip_count: 2
   americas:
     name: azfw-americas
     virtual_hub: americas
     firewall_policy: americas
     sku_tier: Standard
-    public_ip_count: 1
+    public_ip_prefix:
+      name: ippre-azfw-americas
+      prefix_length: 29
+      firewall_ip_count: 2

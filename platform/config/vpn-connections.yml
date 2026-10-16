@@ -1,4 +1,5 @@
 vpn_connections:
+
   london:
     vpn_site: london
     internet_security_enabled: false
@@ -10,6 +11,7 @@ vpn_connections:
       primary:
         shared_key_secret: vpn-london-primary
         bgp_enabled: false
+        route_weight: 100
         ipsec_policy:
           dh_group: DHGroup14
           ike_encryption_algorithm: AES256
@@ -19,15 +21,4 @@ vpn_connections:
           pfs_group: PFS14
           sa_lifetime_sec: 27000
           sa_data_size_kb: 102400000
-      secondary:
-        shared_key_secret: vpn-london-secondary
-        bgp_enabled: false
-        ipsec_policy:
-          dh_group: DHGroup14
-          ike_encryption_algorithm: AES256
-          ike_integrity_algorithm: SHA256
-          encryption_algorithm: AES256
-          integrity_alogrithm: SHA256
-          pfs_group: PFS14
-          sa_lifetime_sec: 27000
-          sa_data_size_kb: 102400000
+      

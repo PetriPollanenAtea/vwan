@@ -6,40 +6,40 @@ locals {
         [
           for collection_key, collection
           in rcg.network_rule_collections : {
-            rcg_key        = rcg_key
-            rcg_name       = rcg.name
-            policy         = rcg.policy
-            collection_key = collection_key
-            collection     = collection.name
+            rcg_key         = rcg_key
+            rcg_name        = rcg.name
+            policy          = rcg.policy
+            collection_key  = collection_key
+            collection      = collection.name
             collection_type = "network"
-            priority = collection.priority
-            rules = collection.rules
+            priority        = collection.priority
+            rules           = collection.rules
           }
         ],
         [
           for collection_key, collection
           in rcg.application_rule_collections : {
-            rcg_key        = rcg_key
-            rcg_name       = rcg.name
-            policy         = rcg.policy
-            collection_key = collection_key
-            collection     = collection.name
+            rcg_key         = rcg_key
+            rcg_name        = rcg.name
+            policy          = rcg.policy
+            collection_key  = collection_key
+            collection      = collection.name
             collection_type = "application"
-            priority = collection.priority
-            rules = collection.rules
+            priority        = collection.priority
+            rules           = collection.rules
           }
         ],
         [
           for collection_key, collection
           in rcg.nat_rule_collections : {
-            rcg_key        = rcg_key
-            rcg_name       = rcg.name
-            policy         = rcg.policy
-            collection_key = collection_key
-            collection     = collection.name
+            rcg_key         = rcg_key
+            rcg_name        = rcg.name
+            policy          = rcg.policy
+            collection_key  = collection_key
+            collection      = collection.name
             collection_type = "nat"
-            priority = collection.priority
-            rules = collection.rules
+            priority        = collection.priority
+            rules           = collection.rules
           }
         ]
       )
@@ -60,7 +60,7 @@ locals {
       tostring(priority) => [
         for collection in local.firewall_rule_collections :
         "${collection.collection_type}:${collection.collection}"
-        if (
+        if(
           collection.rcg_key == rcg_key &&
           collection.priority == priority
         )
@@ -68,7 +68,7 @@ locals {
       if length([
         for collection in local.firewall_rule_collections :
         collection
-        if (
+        if(
           collection.rcg_key == rcg_key &&
           collection.priority == priority
         )
@@ -106,8 +106,8 @@ locals {
   invalid_rule_collection_priorities = {
     for collection in local.firewall_rule_collections :
     "${collection.rcg_key}/${collection.collection}" =>
-      collection.priority
-    if (
+    collection.priority
+    if(
       collection.priority < 100 ||
       collection.priority > 65000
     )

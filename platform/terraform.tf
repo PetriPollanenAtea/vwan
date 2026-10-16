@@ -1,5 +1,5 @@
 terraform {
-  required_version = "=1.15.8"
+  required_version = "=1.16.5"
 
   backend "azurerm" {
     resource_group_name  = "rg-petrip-test"
@@ -11,10 +11,14 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "=4.78.0"
+      version = "=5.9.0"
     }
     random = {
-      version = "=3.0"
+      version = "=3.9.1"
+    }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "=2.13.0"
     }
   }
 }
@@ -24,5 +28,7 @@ provider "azurerm" {
   subscription_id = var.subscription_id
   features {}
 }
+
+provider "azapi" {}
 
 data "azurerm_client_config" "current" {}

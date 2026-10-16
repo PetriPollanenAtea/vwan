@@ -5,10 +5,10 @@ virtual_networks:
     resource_group_name: rg-petrip
     location: swedencentral
     address_space:
-      - 10.10.0.0/16
+      - 172.16.0.0/22
     dns_servers:
-      - 10.10.0.4
-      - 10.10.0.5
+      - 172.16.0.4
+      - 172.16.0.5
     tags:
       environment: production
       region: emea
@@ -17,15 +17,15 @@ virtual_networks:
       application:
         name: snet-application
         address_prefixes:
-          - 10.10.1.0/24
+          - 172.16.0.0/24
       database:
         name: snet-database
         address_prefixes:
-          - 10.10.2.0/24
+          - 172.16.1.0/24
       private_endpoints:
         name: snet-private-endpoints
         address_prefixes:
-          - 10.10.3.0/24
+          - 172.16.2.0/24
         private_endpoint_network_policies: Disabled
 
   emea_shared_services:
@@ -33,7 +33,7 @@ virtual_networks:
     resource_group_name: rg-petrip
     location: swedencentral
     address_space:
-      - 10.11.0.0/16
+      - 172.16.4.0/22
     tags:
       environment: production
       region: emea
@@ -42,14 +42,14 @@ virtual_networks:
       shared_services:
         name: snet-shared-services
         address_prefixes:
-          - 10.11.1.0/24
+          - 172.16.4.0/24
 
   americas_application:
     name: vnet-americas-application-001
     resource_group_name: rg-petrip
     location: westeurope
     address_space:
-      - 10.20.0.0/16
+      - 172.16.8.0/22
     tags:
       environment: production
       region: americas
@@ -58,8 +58,8 @@ virtual_networks:
       application:
         name: snet-application
         address_prefixes:
-          - 10.20.1.0/24
+          - 172.16.9.0/24
       database:
         name: snet-database
         address_prefixes:
-          - 10.20.2.0/24
+          - 172.16.10.0/24

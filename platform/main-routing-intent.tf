@@ -9,17 +9,13 @@ resource "azurerm_virtual_hub_routing_intent" "this" {
     destinations = [
       "Internet"
     ]
-    next_hop = azurerm_firewall.this[
-      each.key
-    ].id
+    next_hop = local.firewall_ids[each.key]
   }
   routing_policy {
     name = "PrivateTraffic"
     destinations = [
       "PrivateTraffic"
     ]
-    next_hop = azurerm_firewall.this[
-      each.key
-    ].id
+    next_hop = local.firewall_ids[each.key]
   }
 }

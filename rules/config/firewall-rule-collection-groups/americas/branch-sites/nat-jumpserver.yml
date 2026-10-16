@@ -8,7 +8,7 @@ rules:
       - TCP
     source_ip_groups:
       - global/shared-services
-    destination_address: 52.157.213.53
+    destination_address: 20.73.183.193
     destination_ports:
       - "3389"
     translated_address: 10.20.1.10

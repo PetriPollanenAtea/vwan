@@ -1,5 +1,5 @@
 terraform {
-  required_version = "=1.15.8"
+  required_version = "=1.16.5"
 
   backend "azurerm" {
     resource_group_name  = "rg-petrip-test"
@@ -11,10 +11,10 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "=4.78.0"
+      version = "=5.9.0"
     }
     random = {
-      version = "=3.0"
+      version = "=3.9.1"
     }
   }
 }

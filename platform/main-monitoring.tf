@@ -5,53 +5,6 @@ resource "azurerm_log_analytics_workspace" "this" {
   sku                 = "PerGB2018"
   retention_in_days   = local.monitoring.log_analytics.retention_in_days
 }
-
-/*
-resource "azurerm_monitor_diagnostic_setting" "virtual_wan" {
-  name                       = "diag-vwan"
-  target_resource_id         = azurerm_virtual_wan.this.id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
-  enabled_log {
-    category = "AllLogs"
-  }
-  metric {
-    category = "AllMetrics"
-  }
-}
-
-resource "azurerm_monitor_diagnostic_setting" "virtual_hubs" {
-  for_each                   = azurerm_virtual_hub.this
-  name                       = "diag-${each.key}"
-  target_resource_id         = each.value.id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
-  enabled_log {
-    category = "AllLogs"
-  }
-  metric {
-    category = "AllMetrics"
-  }
-}
-
-resource "azurerm_monitor_diagnostic_setting" "firewall_policies" {
-  for_each = merge(
-    azurerm_firewall_policy.parent,
-    azurerm_firewall_policy.child
-  )
-  name                       = "diag-${each.key}"
-  target_resource_id         = each.value.id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
-  enabled_log {
-    category = "AllLogs"
-  }
-  metric {
-    category = "AllMetrics"
-  }
-}
-
-*/
-
-
-
 resource "azurerm_monitor_diagnostic_setting" "vpn_gateways" {
   for_each                   = azurerm_vpn_gateway.this
   name                       = "diag-${each.key}"
@@ -69,38 +22,51 @@ resource "azurerm_monitor_diagnostic_setting" "vpn_gateways" {
   enabled_log {
     category = "IKEDiagnosticLog"
   }
-  metric {
+  enabled_metric {
     category = "AllMetrics"
   }
 }
 
 resource "azurerm_monitor_diagnostic_setting" "firewalls" {
-  for_each                   = azurerm_firewall.this
-  name                       = "diag-${each.key}"
-  target_resource_id         = each.value.id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
-  enabled_log {
-    category = "AzureFirewallApplicationRule"
-  }
-  enabled_log {
-    category = "AzureFirewallNetworkRule"
-  }
-  enabled_log {
-    category = "AzureFirewallDnsProxy"
-  }
+  for_each = local.firewall_ids
+
+  name = "diag-${each.key}"
+
+  target_resource_id = each.value
+
+  log_analytics_workspace_id = (
+    azurerm_log_analytics_workspace.this.id
+  )
+
   enabled_log {
     category = "AZFWNetworkRule"
   }
+
   enabled_log {
     category = "AZFWApplicationRule"
   }
+
+  enabled_log {
+    category = "AZFWNatRule"
+  }
+
   enabled_log {
     category = "AZFWDnsQuery"
   }
+
   enabled_log {
     category = "AZFWFqdnResolveFailure"
   }
-  metric {
+
+  enabled_log {
+    category = "AZFWThreatIntel"
+  }
+
+  enabled_log {
+    category = "AZFWIdpsSignature"
+  }
+
+  enabled_metric {
     category = "AllMetrics"
   }
 }
