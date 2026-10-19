@@ -1,3 +1,3 @@
 existing_virtual_networks:
   americas_legacy:
-    resource_id: /subscriptions/bde3cc9b-cee0-42cf-b5dd-fd268eb3f977/resourceGroups/rg-PetriP/providers/Microsoft.Network/virtualNetworks/vnet-americas-legacy-001
+    resource_id: /subscriptions/5e8d8224-4e80-446e-95c1-eb71eb5c866f/resourceGroups/rg-old-networks/providers/Microsoft.Network/virtualNetworks/vnet-americas-legacy-001
