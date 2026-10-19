@@ -1,11 +1,11 @@
 terraform {
-  required_version = "=1.16.5"
+  # required_version = "=1.16.5"
 
   backend "azurerm" {
-    resource_group_name  = "rg-petrip-test"
-    storage_account_name = "stppovwantesttfstate"
-    container_name       = "tfstate"
-    key                  = "terraform.tfstate"
+    # resource_group_name  = "rg-petrip-test"
+    # storage_account_name = "stppovwantesttfstate"
+    # container_name       = "tfstate"
+    # key                  = "terraform.tfstate"
   }
 
   required_providers {
@@ -25,7 +25,7 @@ terraform {
 
 # Define default provider
 provider "azurerm" {
-  subscription_id = var.subscription_id
+  # subscription_id = var.subscription_id
   features {}
 }
 

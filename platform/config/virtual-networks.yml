@@ -2,7 +2,7 @@ virtual_networks:
 
   emea_application:
     name: vnet-emea-application-001
-    resource_group_name: rg-petrip
+    resource_group_name: rg-vnets
     location: swedencentral
     address_space:
       - 172.16.0.0/22
@@ -30,7 +30,7 @@ virtual_networks:
 
   emea_shared_services:
     name: vnet-emea-shared-services-001
-    resource_group_name: rg-petrip
+    resource_group_name: rg-vnets
     location: swedencentral
     address_space:
       - 172.16.4.0/22
@@ -46,7 +46,7 @@ virtual_networks:
 
   americas_application:
     name: vnet-americas-application-001
-    resource_group_name: rg-petrip
+    resource_group_name: rg-vnets
     location: westeurope
     address_space:
       - 172.16.8.0/22

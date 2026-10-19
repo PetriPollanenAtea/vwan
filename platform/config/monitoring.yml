@@ -1,7 +1,7 @@
 monitoring:
   log_analytics:
     name: law-global-network
-    resource_group_name: rg-petrip
+    resource_group_name: rg-monitoring
     location: swedencentral
     retention_in_days: 90
   diagnostics:
