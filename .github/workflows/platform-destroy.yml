@@ -1,4 +1,4 @@
-name: Platform - Deploy
+name: Platform - Destroy
 
 on:
   workflow_dispatch:
