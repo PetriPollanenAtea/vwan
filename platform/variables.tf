@@ -1,8 +1,8 @@
-variable "subscription_id" {
-  description = "Azure subscription used for the deployment."
-  type        = string
-  sensitive   = true
-}
+#variable "subscription_id" {
+#  description = "Azure subscription used for the deployment."
+#  type        = string
+#  sensitive   = true
+#}
 
 variable "virtual_networks_configuration_file" {
   description = "Path to the Virtual Network YAML file."
