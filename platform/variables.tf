@@ -67,6 +67,7 @@ variable "monitoring_configuration_file" {
 variable "vpn_psk_key_vault_id" {
   description = "Resource ID of the Azure Key Vault containing VPN pre-shared keys."
   type        = string
+  default = "/subscriptions/5e8d8224-4e80-446e-95c1-eb71eb5c866f/resourceGroups/rg-keyvault/providers/Microsoft.KeyVault/vaults/kv-hpi-vwan-test"
 }
 
 variable "public_networks_via_onprem_configuration_file" {
