@@ -8,10 +8,9 @@ on:
         description: "Terraform operation"
         required: true
         type: choice
-        default: plan
+        default: destroy
 
         options:
-          - plan
           - destroy
 
 permissions:
@@ -78,86 +77,13 @@ jobs:
             -no-color
 
 
-  plan:
-    name: Plan
-    needs:
-      - validate
-
-    runs-on: ubuntu-latest
-
-    environment: platform-plan
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: ${{ vars.TERRAFORM_VERSION }}
-          terraform_wrapper: false
-
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-
-      - name: Terraform Init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          terraform init \
-            -reconfigure \
-            -input=false \
-            -backend-config="resource_group_name=${{ vars.TFSTATE_RESOURCE_GROUP }}" \
-            -backend-config="storage_account_name=${{ vars.TFSTATE_STORAGE_ACCOUNT }}" \
-            -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}" \
-            -backend-config="key=${{ vars.TFSTATE_PLATFORM_KEY }}" \
-            -backend-config="use_azuread_auth=true"
-
-
-      - name: Terraform Plan
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          terraform plan \
-            -input=false \
-            -lock-timeout=10m \
-            -no-color \
-            -out=platform.tfplan
-
-
-      - name: Create Readable Plan
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: |
-          terraform show \
-            -no-color \
-            platform.tfplan \
-            > platform-plan.txt
-
-
-      - name: Upload Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: platform-production-plan
-          path: |
-            platform/platform.tfplan
-            platform/platform-plan.txt
-          retention-days: 5
-          if-no-files-found: error
-
-
   destroy:
     name: Destroy
 
     if: ${{ inputs.operation == 'destroy' }}
 
     needs:
-      - plan
+      - validate
 
     runs-on: ubuntu-latest
 
@@ -197,13 +123,6 @@ jobs:
             -backend-config="use_azuread_auth=true"
 
 
-      - name: Download Approved Plan
-        uses: actions/download-artifact@v4
-        with:
-          name: platform-production-plan
-          path: platform
-
-
       - name: Terraform Destroy
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -211,4 +130,3 @@ jobs:
             -input=false \
             -lock-timeout=10m \
             -auto-approve \
-            platform.tfplan
