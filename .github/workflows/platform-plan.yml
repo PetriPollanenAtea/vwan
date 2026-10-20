@@ -1,27 +1,79 @@
 name: Platform - Validate and Plan
 
+run-name: >-
+  Platform Plan |
+  ${{ github.event_name }} |
+  ${{ github.head_ref || github.ref_name }} |
+  ${{ github.actor }}
+
 on:
-  pull_request:
-    branches:
+
+  #
+  # Give developers immediate feedback when they push changes
+  # to feature branches.
+  #
+  push:
+    branches-ignore:
       - main
+
     paths:
       - "platform/**"
       - ".github/workflows/platform-plan.yml"
       - ".github/workflows/platform-deploy.yml"
 
+
+  #
+  # Authoritative CI checks for pull requests targeting main.
+  # These checks should be configured as required status checks
+  # in main branch protection.
+  #
+  pull_request:
+    branches:
+      - main
+
+    paths:
+      - "platform/**"
+      - ".github/workflows/platform-plan.yml"
+      - ".github/workflows/platform-deploy.yml"
+
+
+  #
+  # Allow CI to be triggered manually when troubleshooting
+  # Terraform or pipeline configuration.
+  #
+  workflow_dispatch:
+
+
 permissions:
   contents: read
   id-token: write
 
+
+#
+# Allow different branches to be planned concurrently,
+# but cancel an obsolete run when another commit is pushed
+# to the same branch / PR.
+#
 concurrency:
-  group: platform-plan-${{ github.event.pull_request.number }}
+  group: >-
+    platform-plan-${{
+      github.head_ref ||
+      github.ref_name
+    }}
+
   cancel-in-progress: true
+
 
 env:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
+
   TF_WORKING_DIR: "./platform"
 
+  #
+  # Terraform AzureRM provider authentication using
+  # GitHub OIDC / Entra workload identity federation.
+  #
   ARM_USE_OIDC: "true"
   ARM_USE_AZUREAD: "true"
 
@@ -29,27 +81,36 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+
 jobs:
 
   validate:
-    name: Validate
+
+    name: Platform / Validate
+
     runs-on: ubuntu-latest
+
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
+
         with:
           terraform_version: ${{ vars.TERRAFORM_VERSION }}
           terraform_wrapper: false
 
 
-      - name: Terraform Format
+      #
+      # Formatting does not require Azure authentication.
+      #
+      - name: Terraform Format Check
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         run: |
           terraform fmt \
             -check \
@@ -57,8 +118,13 @@ jobs:
             -diff
 
 
-      - name: Terraform Init - no backend
+      #
+      # Initialize providers/modules but don't connect
+      # to the remote Terraform backend.
+      #
+      - name: Terraform Init without Backend
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         run: |
           terraform init \
             -backend=false \
@@ -67,43 +133,68 @@ jobs:
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         run: |
           terraform validate \
             -no-color
 
 
+
   plan:
-    name: Plan
+
+    name: Platform / Plan
+
     needs:
       - validate
 
     runs-on: ubuntu-latest
 
+    #
+    # This corresponds to the GitHub environment and to
+    # the environment-scoped Entra federated credential.
+    #
     environment: platform-plan
+
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
+
         with:
           terraform_version: ${{ vars.TERRAFORM_VERSION }}
           terraform_wrapper: false
 
 
+      #
+      # Azure authentication uses GitHub OIDC.
+      #
+      # Required Entra federated credential:
+      #
+      #   Organization: PetriPollanenAtea
+      #   Repository:   vwan
+      #   Entity type:  Environment
+      #   Environment:  platform-plan
+      #
       - name: Azure Login
         uses: azure/login@v2
+
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
 
+      #
+      # Initialize the actual Azure Storage backend.
+      #
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         run: |
           terraform init \
             -reconfigure \
@@ -115,8 +206,12 @@ jobs:
             -backend-config="use_azuread_auth=true"
 
 
+      #
+      # Create a binary Terraform plan.
+      #
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         run: |
           terraform plan \
             -input=false \
@@ -125,8 +220,12 @@ jobs:
             -out=platform.tfplan
 
 
-      - name: Create Readable Plan
+      #
+      # Produce a readable version for reviewing or downloading.
+      #
+      - name: Create Readable Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
+
         run: |
           terraform show \
             -no-color \
@@ -134,12 +233,49 @@ jobs:
             > platform-plan.txt
 
 
-      - name: Upload Plan
+      #
+      # Put a short summary directly into the GitHub Actions
+      # workflow summary.
+      #
+      - name: Add Plan to Job Summary
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+        run: |
+          {
+            echo "## Terraform Platform Plan"
+            echo
+            echo "**Branch:** \`${{ github.head_ref || github.ref_name }}\`"
+            echo
+            echo "**Triggered by:** \`${{ github.event_name }}\`"
+            echo
+            echo "**Actor:** \`${{ github.actor }}\`"
+            echo
+            echo "<details>"
+            echo "<summary>Show Terraform plan</summary>"
+            echo
+            echo '```terraform'
+            cat platform-plan.txt
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
+      #
+      # Store both machine-readable and human-readable plans.
+      #
+      - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
+
         with:
-          name: platform-plan-${{ github.event.pull_request.number }}
+          name: >-
+            platform-plan-${{
+              github.event.pull_request.number ||
+              github.run_number
+            }}
+
           path: |
             platform/platform.tfplan
             platform/platform-plan.txt
+
           retention-days: 5
           if-no-files-found: error
