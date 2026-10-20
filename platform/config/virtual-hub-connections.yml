@@ -17,6 +17,12 @@ virtual_hub_connections:
     virtual_network: emea_shared_services
     internet_security_enabled: false
 
+  emea_legacy:
+    name: conn-emea-legacy
+    virtual_hub: emea
+    virtual_network: emea_legacy
+    internet_security_enabled: false
+
   americas_application:
     name: conn-americas-application
     virtual_hub: americas
