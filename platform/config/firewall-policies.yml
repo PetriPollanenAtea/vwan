@@ -1,14 +1,14 @@
 firewall_policies:
   global:
     name: azfw-pol-global
-    resource_group_name: rg-azfw
+    resource_group_name: rg-vwan
     location: swedencentral
     sku: Standard
   
   emea:
     parent: global
     name: azfw-pol-emea
-    resource_group_name: rg-azfw
+    resource_group_name: rg-vwan
     location: swedencentral
     sku: Standard
     dns:
@@ -20,7 +20,7 @@ firewall_policies:
   americas:
     parent: global
     name: azfw-pol-americas
-    resource_group_name: rg-azfw
+    resource_group_name: rg-vwan
     location: swedencentral
     sku: Standard
     dns:
