@@ -363,55 +363,685 @@ Credentials and secrets must not be stored in this repository.
 
 ---
 
-# Deployment
+# CI/CD with GitHub Actions
 
-Initialize Terraform:
+GitHub Actions is used to validate, plan, and deploy the Azure Virtual WAN platform.
 
-    terraform init
+The Terraform root module is located under:
 
-Validate the configuration:
+    platform/
 
-    terraform validate
+The CI/CD design uses two workflows:
 
-Review the deployment:
+    .github/workflows/
+    ├── platform-plan.yml
+    └── platform-deploy.yml
 
-    terraform plan
+The workflows authenticate to Azure using OpenID Connect (OIDC) workload identity federation.
 
-Deploy:
+No Azure client secret is required.
 
-    terraform apply
+The authentication flow is:
 
-Production changes should normally be executed through the project's GitHub Actions workflow rather than directly from an administrator workstation.
+    GitHub Actions
+          |
+          | OIDC token
+          v
+    Microsoft Entra ID
+          |
+          | Federated identity credential
+          v
+    Entra application / service principal
+          |
+          | Azure RBAC
+          v
+    Azure subscription
+
+Microsoft Entra workload identity federation allows an external workload such as GitHub Actions to authenticate using an externally issued token instead of storing an application secret or certificate.
 
 ---
 
-# GitHub Actions
+# GitHub Actions Workflows
 
-GitHub Actions is used for Terraform validation, planning, and deployment.
+## Platform Plan Workflow
 
-A typical workflow consists of:
+The platform plan workflow is stored in:
+
+    .github/workflows/platform-plan.yml
+
+It is triggered by pull requests targeting the `main` branch when files under the platform deployment are changed.
+
+The workflow performs:
 
     Checkout
-        |
-        v
-    Azure authentication
-        |
-        v
-    Terraform init
-        |
-        v
+       |
+       v
+    Terraform fmt
+       |
+       v
     Terraform validate
-        |
-        v
+       |
+       v
+    Azure OIDC login
+       |
+       v
+    Terraform init
+       |
+       v
     Terraform plan
-        |
-        v
-    Review / approval
-        |
-        v
+       |
+       v
+    Upload plan artifact
+
+The workflow operates against:
+
+    ./platform
+
+Changes anywhere under:
+
+    platform/**
+
+trigger validation and planning.
+
+This is intentional because much of the platform configuration is stored in YAML files rather than directly in Terraform resources.
+
+For example, changes to:
+
+    platform/config/firewalls.yml
+    platform/config/vpn-sites.yml
+    platform/config/vpn-connections.yml
+
+must result in a Terraform plan even if no `.tf` file changed.
+
+The plan workflow uses the GitHub environment:
+
+    platform-plan
+
+No Terraform apply is performed by this workflow.
+
+---
+
+## Platform Deployment Workflow
+
+The platform deployment workflow is stored in:
+
+    .github/workflows/platform-deploy.yml
+
+The workflow is manually triggered with:
+
+    Actions
+      -> Platform - Deploy
+      -> Run workflow
+
+It supports:
+
+    plan
+    apply
+
+The apply process is:
+
+    Terraform validate
+         |
+         v
+    Terraform plan
+         |
+         v
+    Save deployment plan
+         |
+         v
+    platform-production environment
+         |
+         v
+    Required approval
+         |
+         v
     Terraform apply
 
-Azure authentication should use workload identity federation where possible rather than long-lived client secrets.
+The apply stage uses the Terraform plan produced earlier in the same workflow.
+
+It does not generate a new plan after deployment approval.
+
+This ensures that the plan reviewed before approval is the plan passed to Terraform apply.
+
+---
+
+# GitHub Environments
+
+Two GitHub environments are required:
+
+    platform-plan
+    platform-production
+
+Create them from:
+
+    GitHub repository
+      -> Settings
+      -> Environments
+      -> New environment
+
+---
+
+## platform-plan
+
+Create an environment named:
+
+    platform-plan
+
+This environment is used by Terraform plan jobs.
+
+Recommended configuration:
+
+    Required reviewers: disabled
+
+The environment should be able to authenticate to Azure using the Entra application configured for Terraform.
+
+---
+
+## platform-production
+
+Create another environment named:
+
+    platform-production
+
+This environment protects Terraform apply operations.
+
+Recommended configuration:
+
+    Required reviewers: enabled
+    Prevent self-review: enabled
+    Deployment branch: main
+
+The intent is that infrastructure changes cannot be applied until an authorized reviewer approves the GitHub environment deployment.
+
+The production workflow contains:
+
+    environment: platform-production
+
+which causes GitHub to apply the protection rules configured on that environment.
+
+---
+
+# Azure Authentication
+
+The workflows authenticate to Azure using GitHub OIDC and Microsoft Entra workload identity federation.
+
+The deployment does not require:
+
+    AZURE_CLIENT_SECRET
+
+Instead, GitHub requests an OIDC token and Microsoft Entra ID exchanges that trusted token for an Azure access token.
+
+The Entra configuration consists of:
+
+1. Microsoft Entra application registration
+2. Service principal
+3. Azure RBAC assignments
+4. GitHub federated identity credentials
+5. GitHub environment configuration
+
+---
+
+# Create the Microsoft Entra Application
+
+If a Terraform deployment application does not already exist, create one.
+
+In the Azure portal:
+
+    Microsoft Entra ID
+      -> App registrations
+      -> New registration
+
+Example name:
+
+    github-vwan-terraform
+
+For a normal organization-internal Terraform deployment, select the account type appropriate for the organization's Entra tenant.
+
+After creating the application, record:
+
+    Application (client) ID
+    Directory (tenant) ID
+
+The application registration defines the identity used by GitHub Actions.
+
+A corresponding service principal represents that application inside the tenant and is the identity to which Azure RBAC permissions are assigned.
+
+---
+
+# Configure Azure RBAC
+
+The Entra application's service principal must have Azure RBAC permissions for the resources managed by Terraform.
+
+Assign permissions at the smallest practical scope.
+
+For example:
+
+    Subscription
+       |
+       +-- Terraform deployment identity
+             |
+             +-- Resource groups managed by Terraform
+             |
+             +-- Terraform state storage
+
+The exact RBAC roles depend on the resources managed by the platform.
+
+The identity must have sufficient permissions to:
+
+- manage the Azure resources included in the Terraform deployment;
+- read existing resources referenced by Terraform;
+- access the Terraform state backend.
+
+Avoid assigning broader permissions than required.
+
+---
+
+# Terraform State Permissions
+
+Terraform state is stored using the AzureRM backend.
+
+The backend configuration is intentionally partial:
+
+    terraform {
+      backend "azurerm" {}
+    }
+
+The GitHub workflow supplies the backend configuration during:
+
+    terraform init
+
+The workflows use:
+
+    use_azuread_auth=true
+
+The GitHub/Entra deployment identity therefore also requires the appropriate Azure RBAC access to the Terraform state Storage Account or Blob container.
+
+No Storage Account access key should be stored in the repository.
+
+---
+
+# Configure GitHub OIDC Federation
+
+GitHub must be configured as a trusted external identity for the Entra application.
+
+In the Azure portal:
+
+    Microsoft Entra ID
+      -> App registrations
+      -> github-vwan-terraform
+      -> Certificates & secrets
+      -> Federated credentials
+      -> Add credential
+
+Select the GitHub Actions scenario for deploying Azure resources.
+
+Configure the GitHub repository information.
+
+Organization:
+
+    PetriPollanenAtea
+
+Repository:
+
+    vwan
+
+Two federated credentials are recommended because the repository uses two GitHub environments.
+
+---
+
+## Federated Credential for Platform Plan
+
+Create the first federated credential for:
+
+    GitHub organization:
+    PetriPollanenAtea
+
+    Repository:
+    vwan
+
+    Entity type:
+    Environment
+
+    GitHub environment:
+    platform-plan
+
+Example federated credential name:
+
+    github-vwan-platform-plan
+
+This credential authorizes workflow jobs running in the `platform-plan` GitHub environment to authenticate as the Entra application.
+
+---
+
+## Federated Credential for Platform Production
+
+Create another federated credential for:
+
+    GitHub organization:
+    PetriPollanenAtea
+
+    Repository:
+    vwan
+
+    Entity type:
+    Environment
+
+    GitHub environment:
+    platform-production
+
+Example name:
+
+    github-vwan-platform-production
+
+This credential authorizes jobs running in the protected `platform-production` GitHub environment.
+
+The production trust relationship is therefore:
+
+    PetriPollanenAtea/vwan
+             |
+             v
+    platform-production
+             |
+             v
+    GitHub OIDC token
+             |
+             v
+    Microsoft Entra federated credential
+             |
+             v
+    Terraform deployment application
+             |
+             v
+    Azure RBAC
+
+GitHub environment protection should therefore be treated as part of the production deployment security boundary.
+
+---
+
+# Federated Credential Properties
+
+GitHub and Entra validate the claims in the OIDC token against the federated identity credential.
+
+For standard GitHub-to-Azure federation, the audience used for the exchange is:
+
+    api://AzureADTokenExchange
+
+The federated credential subject must correspond to the GitHub repository and entity configured for the workflow.
+
+When GitHub environments are used, create the credential specifically for the environment rather than broadly trusting every branch of the repository.
+
+The GitHub environment names used in the federated credentials must correspond to the environments referenced by the workflow:
+
+    environment: platform-plan
+
+and:
+
+    environment: platform-production
+
+If these values do not correspond to the federated trust configuration, Azure OIDC authentication fails.
+
+---
+
+# GitHub Azure Configuration
+
+Configure the following values for the GitHub environments:
+
+    AZURE_CLIENT_ID
+    AZURE_TENANT_ID
+    AZURE_SUBSCRIPTION_ID
+
+Where:
+
+    AZURE_CLIENT_ID
+        Application (client) ID of the Entra application
+
+    AZURE_TENANT_ID
+        Directory (tenant) ID of the Entra tenant
+
+    AZURE_SUBSCRIPTION_ID
+        Azure subscription containing the deployed resources
+
+These values are consumed by the Azure Login action.
+
+The workflow uses:
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+No client secret is supplied.
+
+---
+
+# GitHub Workflow OIDC Permissions
+
+The workflow must be allowed to request a GitHub OIDC token.
+
+The workflow therefore includes:
+
+    permissions:
+      contents: read
+      id-token: write
+
+The `id-token: write` permission allows the GitHub workflow to request the OIDC token used during Azure authentication.
+
+This does not itself grant access to Azure.
+
+Azure access is granted only after Microsoft Entra ID validates the GitHub OIDC token against the configured federated credential and the resulting Entra identity has the required Azure RBAC permissions.
+
+---
+
+# GitHub Variables
+
+The following GitHub Actions variables are used by the workflows:
+
+    TERRAFORM_VERSION
+
+    TFSTATE_RESOURCE_GROUP
+    TFSTATE_STORAGE_ACCOUNT
+    TFSTATE_CONTAINER
+    TFSTATE_PLATFORM_KEY
+
+Example:
+
+    TERRAFORM_VERSION       = 1.14.6
+
+    TFSTATE_RESOURCE_GROUP  = rg-terraform-state
+    TFSTATE_STORAGE_ACCOUNT = <storage-account-name>
+    TFSTATE_CONTAINER       = tfstate
+    TFSTATE_PLATFORM_KEY    = vwan/platform.tfstate
+
+These can be configured from:
+
+    Repository
+      -> Settings
+      -> Secrets and variables
+      -> Actions
+      -> Variables
+
+Environment-specific values can alternatively be configured directly on the corresponding GitHub environment.
+
+---
+
+# Test OIDC Authentication
+
+OIDC authentication should be tested before troubleshooting Terraform.
+
+A simple GitHub Actions test can be used:
+
+    name: Test Azure OIDC
+
+    on:
+      workflow_dispatch:
+
+    permissions:
+      contents: read
+      id-token: write
+
+    jobs:
+
+      test:
+        runs-on: ubuntu-latest
+
+        environment: platform-plan
+
+        steps:
+
+          - name: Azure Login
+            uses: azure/login@v2
+            with:
+              client-id: ${{ secrets.AZURE_CLIENT_ID }}
+              tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+              subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+          - name: Verify Azure context
+            uses: azure/cli@v2
+            with:
+              inlineScript: |
+                az account show
+
+If this workflow succeeds, the following path has been validated independently of Terraform:
+
+    GitHub environment
+         |
+         v
+    GitHub OIDC
+         |
+         v
+    Entra federated credential
+         |
+         v
+    Entra application/service principal
+         |
+         v
+    Azure subscription
+
+Only after this succeeds should Terraform backend or provider authentication be troubleshooted.
+
+---
+
+# OIDC Troubleshooting
+
+When Azure Login fails, verify the configuration in this order.
+
+## 1. GitHub workflow permissions
+
+Confirm:
+
+    permissions:
+      id-token: write
+      contents: read
+
+## 2. Environment name
+
+Confirm that the workflow uses the expected environment:
+
+    environment: platform-plan
+
+or:
+
+    environment: platform-production
+
+and that the corresponding federated credential exists in Entra.
+
+## 3. Repository identity
+
+Confirm the federated credential references:
+
+    Organization:
+    PetriPollanenAtea
+
+    Repository:
+    vwan
+
+## 4. Entra application identifiers
+
+Verify:
+
+    AZURE_CLIENT_ID
+    AZURE_TENANT_ID
+    AZURE_SUBSCRIPTION_ID
+
+against the intended Entra application, tenant, and Azure subscription.
+
+## 5. Azure RBAC
+
+Successful authentication does not guarantee authorization.
+
+If Azure Login succeeds but Terraform receives authorization errors, verify Azure RBAC assignments for the service principal.
+
+## 6. Terraform state access
+
+If Terraform can authenticate to Azure but `terraform init` fails against the AzureRM backend, verify the identity's RBAC access to the Terraform state Storage Account or container.
+
+---
+
+# CI/CD Security Model
+
+The intended security model is:
+
+    Pull Request
+          |
+          v
+    platform-plan
+          |
+          +-- OIDC federation
+          +-- Terraform validation
+          +-- Terraform plan
+          |
+          X
+       No apply
+
+
+    Manual deployment
+          |
+          v
+    Terraform plan
+          |
+          v
+    platform-production
+          |
+          +-- main branch restriction
+          +-- required reviewer
+          +-- prevent self-review
+          |
+          v
+    OIDC federation
+          |
+          v
+    Terraform apply
+
+The production environment should be more tightly protected than the planning environment.
+
+No long-lived Azure client secret should be required by either workflow.
+
+---
+
+# Initial CI/CD Setup Checklist
+
+Before running the platform workflows, verify:
+
+- [ ] Microsoft Entra application exists
+- [ ] Application (client) ID recorded
+- [ ] Directory (tenant) ID recorded
+- [ ] Service principal has required Azure RBAC permissions
+- [ ] Terraform state Storage Account access is configured
+- [ ] GitHub environment `platform-plan` exists
+- [ ] GitHub environment `platform-production` exists
+- [ ] `platform-production` has required reviewers configured
+- [ ] `platform-production` is restricted to `main`
+- [ ] Federated credential exists for `platform-plan`
+- [ ] Federated credential exists for `platform-production`
+- [ ] `AZURE_CLIENT_ID` is configured
+- [ ] `AZURE_TENANT_ID` is configured
+- [ ] `AZURE_SUBSCRIPTION_ID` is configured
+- [ ] Terraform backend variables are configured
+- [ ] `TERRAFORM_VERSION` is configured
+- [ ] OIDC test workflow succeeds
+- [ ] Terraform plan workflow succeeds
 
 ---
 
